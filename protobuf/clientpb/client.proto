@@ -1,0 +1,40 @@
+syntax = "proto3";
+package clientpb;
+option go_package = "github.com/Veids/forwardlib/protobuf/clientpb";
+
+import "commonpb/common.proto";
+
+service ClientRpc {
+  // *** Socks ***
+  rpc SocksStart(commonpb.Addr) returns (commonpb.Empty);
+  rpc SocksStop(commonpb.Addr) returns (commonpb.Empty);
+
+  // *** Reverse ***
+  rpc ReverseStart(commonpb.AddrPack) returns(commonpb.Empty);
+  rpc ReverseStop(commonpb.Addr) returns(commonpb.Empty);
+
+  // *** Common ***
+  rpc List(commonpb.Empty) returns (EndpointList);
+
+  // *** SFTP ***
+  rpc ListFiles(Path) returns (FileList);
+  rpc Glob(Path) returns (FileList);
+  rpc Download(DownloadRequest) returns (commonpb.Empty);
+}
+
+message EndpointList {
+  repeated string endpoints = 1;
+}
+
+message DownloadRequest {
+  Path input = 1;
+  Path output = 2;
+}
+
+message Path {
+  string path = 1;
+}
+
+message FileList {
+  repeated string files = 1;
+}

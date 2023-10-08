@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "forwardlib"
+version = "0.1.0"
+description = ""
+authors = ["Veids <veidsme@gmail.com>"]
+readme = "README.md"
+include = [
+  "tools/*"
+]
+packages=[
+  { include = "tools" }
+]
+
+[tool.poetry.scripts]
+fwdctrl = "tools.fwdctrl:main"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+grpcio-tools = "^1.59.0"
+
+
+[tool.poetry.group.dev.dependencies]
+ipython = "^8.16.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
