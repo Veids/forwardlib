@@ -126,6 +126,36 @@ def download_glob(args):
     for file in files:
         download_file(args.control, file, os.getcwd())
 
+
+def add_forward(args):
+    host,port = args.listen.split(':')
+    remote_host,remote_port = args.remote.split(':')
+    addrPack = common_pb2.AddrPack()
+    addrPack.local.ip, addrPack.local.port = host, int(port)
+    addrPack.remote.ip, addrPack.remote.port = remote_host, int(remote_port)
+
+    with grpc.insecure_channel(args.control) as channel:
+        stub = client_pb2_grpc.ClientRpcStub(channel)
+
+        try:
+            stub.ForwardStart(addrPack)
+        except grpc.RpcError as rpc_error:
+            print(rpc_error.details())
+
+def rm_forward(args):
+    host,port = args.listen.split(':')
+
+    addr = common_pb2.Addr()
+    addr.ip, addr.port = host, int(port)
+
+    with grpc.insecure_channel(args.control) as channel:
+        stub = client_pb2_grpc.ClientRpcStub(channel)
+
+        try:
+            stub.ForwardStop(addr)
+        except grpc.RpcError as rpc_error:
+            print(rpc_error.details())
+
 def main():
     parser = argparse.ArgumentParser(
         prog = "grdp2tcp.py"
@@ -155,6 +185,17 @@ def main():
     r_add_parser.set_defaults(func=add_reverse)
     r_rm_parser = reverse_sub.add_parser("rm", parents=[remote_listen_addr, remote_addr])
     r_rm_parser.set_defaults(func=rm_reverse)
+
+    forward_parser = main_sub.add_parser("forward")
+    forward_sub = forward_parser.add_subparsers()
+    forward_remote_listen_addr = argparse.ArgumentParser(add_help = False)
+    forward_remote_listen_addr.add_argument("-l", "--listen", metavar="127.0.0.1:8445", help = "Local connect address", required = True)
+    forward_remote_addr = argparse.ArgumentParser(add_help = False)
+    forward_remote_addr.add_argument("-r", "--remote", metavar="127.0.0.1:8445", help = "Remote listen address", required = True)
+    r_add_parser = forward_sub.add_parser("add", parents=[forward_remote_listen_addr, forward_remote_addr])
+    r_add_parser.set_defaults(func=add_forward)
+    r_rm_parser = forward_sub.add_parser("rm", parents=[forward_remote_listen_addr, forward_remote_addr])
+    r_rm_parser.set_defaults(func=rm_forward)
 
     list_parser = main_sub.add_parser("list")
     list_parser.set_defaults(func=list_endpoints)

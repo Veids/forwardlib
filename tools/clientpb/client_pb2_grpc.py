@@ -35,6 +35,16 @@ class ClientRpcStub(object):
                 request_serializer=commonpb_dot_common__pb2.Addr.SerializeToString,
                 response_deserializer=commonpb_dot_common__pb2.Empty.FromString,
                 )
+        self.ForwardStart = channel.unary_unary(
+                '/clientpb.ClientRpc/ForwardStart',
+                request_serializer=commonpb_dot_common__pb2.AddrPack.SerializeToString,
+                response_deserializer=commonpb_dot_common__pb2.Empty.FromString,
+                )
+        self.ForwardStop = channel.unary_unary(
+                '/clientpb.ClientRpc/ForwardStop',
+                request_serializer=commonpb_dot_common__pb2.Addr.SerializeToString,
+                response_deserializer=commonpb_dot_common__pb2.Empty.FromString,
+                )
         self.List = channel.unary_unary(
                 '/clientpb.ClientRpc/List',
                 request_serializer=commonpb_dot_common__pb2.Empty.SerializeToString,
@@ -86,6 +96,19 @@ class ClientRpcServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ForwardStart(self, request, context):
+        """*** Forward ***
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ForwardStop(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def List(self, request, context):
         """*** Common ***
         """
@@ -132,6 +155,16 @@ def add_ClientRpcServicer_to_server(servicer, server):
             ),
             'ReverseStop': grpc.unary_unary_rpc_method_handler(
                     servicer.ReverseStop,
+                    request_deserializer=commonpb_dot_common__pb2.Addr.FromString,
+                    response_serializer=commonpb_dot_common__pb2.Empty.SerializeToString,
+            ),
+            'ForwardStart': grpc.unary_unary_rpc_method_handler(
+                    servicer.ForwardStart,
+                    request_deserializer=commonpb_dot_common__pb2.AddrPack.FromString,
+                    response_serializer=commonpb_dot_common__pb2.Empty.SerializeToString,
+            ),
+            'ForwardStop': grpc.unary_unary_rpc_method_handler(
+                    servicer.ForwardStop,
                     request_deserializer=commonpb_dot_common__pb2.Addr.FromString,
                     response_serializer=commonpb_dot_common__pb2.Empty.SerializeToString,
             ),
@@ -228,6 +261,40 @@ class ClientRpc(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/clientpb.ClientRpc/ReverseStop',
+            commonpb_dot_common__pb2.Addr.SerializeToString,
+            commonpb_dot_common__pb2.Empty.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def ForwardStart(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/clientpb.ClientRpc/ForwardStart',
+            commonpb_dot_common__pb2.AddrPack.SerializeToString,
+            commonpb_dot_common__pb2.Empty.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def ForwardStop(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/clientpb.ClientRpc/ForwardStop',
             commonpb_dot_common__pb2.Addr.SerializeToString,
             commonpb_dot_common__pb2.Empty.FromString,
             options, channel_credentials,

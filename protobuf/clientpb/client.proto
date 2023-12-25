@@ -13,6 +13,10 @@ service ClientRpc {
   rpc ReverseStart(commonpb.AddrPack) returns(commonpb.Empty);
   rpc ReverseStop(commonpb.Addr) returns(commonpb.Empty);
 
+  // *** Forward ***
+  rpc ForwardStart(commonpb.AddrPack) returns(commonpb.Empty);
+  rpc ForwardStop(commonpb.Addr) returns(commonpb.Empty);
+
   // *** Common ***
   rpc List(commonpb.Empty) returns (EndpointList);
 

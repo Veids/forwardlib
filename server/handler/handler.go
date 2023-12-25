@@ -56,6 +56,41 @@ func (s *Handler) HandleStream(stream net.Conn) {
 			}
 		}()
 		break
+	case common.PORT_FORWARD:
+		log.Println("Passing off to Forward")
+		var addr common.Addr
+		addr.Unmarshal(stream)
+		remoteAddr := addr.ToString()
+
+		go func() {
+			tcpAddr, err := net.ResolveTCPAddr("tcp", remoteAddr)
+			if err != nil {
+				log.Printf("Failed to resolve forward addr: %v", err)
+				stream.Close()
+				return
+			}
+
+			conn, err := net.DialTCP("tcp", nil, tcpAddr)
+			if err != nil {
+				log.Printf("Failed to establish reverse tcp connection: %s", err)
+				stream.Close()
+				return
+			}
+
+			go func() {
+				log.Printf("Starting to copy conn to stream for %s", conn.RemoteAddr())
+				io.Copy(conn, stream)
+				conn.Close()
+				log.Printf("Done copying conn to stream for %s", conn.RemoteAddr())
+			}()
+
+			go func() {
+				log.Printf("Starting to copy stream to conn for %s", conn.RemoteAddr())
+				io.Copy(stream, conn)
+				stream.Close()
+				log.Printf("Done copying stream to conn for %s", conn.RemoteAddr())
+			}()
+		}()
 	case common.SFTP:
 		log.Println("Passing off to SFTP")
 		go func() {

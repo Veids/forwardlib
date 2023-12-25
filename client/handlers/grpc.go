@@ -22,6 +22,7 @@ type ClientRpcServer struct {
 	session *yamux.Session
 	socks   SocksServers
 	reverse *ReverseHandler
+	forward ForwardServers
 	control *rpc.Client
 	sftp    *sftp.Client
 	clientpb.UnimplementedClientRpcServer
@@ -32,6 +33,7 @@ func NewClientRpcServer(session *yamux.Session, control *rpc.Client, reverse *Re
 		session,
 		SocksServers{m: make(map[string]*SocksServer)},
 		reverse,
+		ForwardServers{m: make(map[string]*ForwardServer)},
 		control,
 		sftp,
 		clientpb.UnimplementedClientRpcServer{},
@@ -145,6 +147,12 @@ func (s *ClientRpcServer) List(ctx context.Context, _ *commonpb.Empty) (*clientp
 	}
 	s.reverse.dictionary.Unlock()
 
+	s.forward.RLock()
+	for k, v := range s.forward.m {
+		list.Endpoints = append(list.Endpoints, fmt.Sprintf("forward %s %s:%d", k, v.remote_address.Ip, v.remote_address.Port))
+	}
+	s.forward.RUnlock()
+
 	return &list, nil
 }
 
@@ -197,5 +205,49 @@ func (s *ClientRpcServer) Download(ctx context.Context, req *clientpb.DownloadRe
 	}
 	log.Printf("Transfered: %d", nBytes)
 
+	return &commonpb.Empty{}, nil
+}
+
+func (s *ClientRpcServer) ForwardStart(ctx context.Context, addrPack *commonpb.AddrPack) (*commonpb.Empty, error) {
+	local_address := fmt.Sprintf("%s:%d", addrPack.Local.Ip, addrPack.Local.Port)
+
+	s.forward.Lock()
+	defer s.forward.Unlock()
+
+	if _, ok := s.forward.m[local_address]; ok {
+		return nil, fmt.Errorf("Forward listener %s already exist", local_address)
+	} else {
+		l, err := net.Listen("tcp", local_address)
+		if err != nil {
+			return nil, err
+		}
+		v := &ForwardServer{
+			listener: l,
+			quit:     make(chan interface{}),
+			session:  s.session,
+			remote_address: common.Addr{
+				Ip:   addrPack.Remote.Ip,
+				Port: addrPack.Remote.Port,
+			},
+		}
+		v.wg.Add(1)
+		s.forward.m[local_address] = v
+		go v.Serve()
+		log.Printf("Started forward server on %s\n", local_address)
+		return &commonpb.Empty{}, nil
+	}
+}
+
+func (s *ClientRpcServer) ForwardStop(ctx context.Context, localAddr *commonpb.Addr) (*commonpb.Empty, error) {
+	address := fmt.Sprintf("%s:%d", localAddr.Ip, localAddr.Port)
+	s.forward.Lock()
+	defer s.forward.Unlock()
+
+	if val, ok := s.forward.m[address]; ok {
+		val.Stop()
+		delete(s.forward.m, address)
+	} else {
+		return nil, fmt.Errorf("Forward listener %s doesn't exist", address)
+	}
 	return &commonpb.Empty{}, nil
 }
