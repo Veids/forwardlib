@@ -2,8 +2,8 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-from clientpb import client_pb2 as clientpb_dot_client__pb2
-from commonpb import common_pb2 as commonpb_dot_common__pb2
+from tools.clientpb import client_pb2 as clientpb_dot_client__pb2
+from tools.commonpb import common_pb2 as commonpb_dot_common__pb2
 
 
 class ClientRpcStub(object):
