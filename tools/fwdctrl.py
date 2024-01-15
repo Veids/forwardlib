@@ -98,7 +98,7 @@ def glob_files(control, path: str):
     return []
 
 def download_file(control, path: str, out_dir: str):
-    req = client_pb2.DownloadRequest()
+    req = client_pb2.FileTransferRequest()
     req.input.path = path
     req.output.path = out_dir
 
@@ -108,6 +108,23 @@ def download_file(control, path: str, out_dir: str):
         try:
             stub.Download(req)
             print("Downloaded %s" % path)
+        except grpc.RpcError as rpc_error:
+            print(rpc_error.details())
+
+
+def upload_file(control, input: str, output: str):
+    input = os.path.abspath(input)
+
+    req = client_pb2.FileTransferRequest()
+    req.input.path = input
+    req.output.path = output
+
+    with grpc.insecure_channel(control) as channel:
+        stub = client_pb2_grpc.ClientRpcStub(channel)
+
+        try:
+            stub.Upload(req)
+            print("Uploaded %s" % input)
         except grpc.RpcError as rpc_error:
             print(rpc_error.details())
 
@@ -125,6 +142,10 @@ def download_glob(args):
     files = glob_files(args.control, args.path)
     for file in files:
         download_file(args.control, file, os.getcwd())
+
+
+def upload(args):
+    upload_file(args.control, args.input, args.output)
 
 
 def add_forward(args):
@@ -158,7 +179,7 @@ def rm_forward(args):
 
 def main():
     parser = argparse.ArgumentParser(
-        prog = "grdp2tcp.py"
+        prog = "fwdctrl.py"
     )
 
     parser.add_argument("-c", '--control', metavar = "127.0.0.1:8337", default = "127.0.0.1:8337", help = "Control server address")
@@ -215,6 +236,11 @@ def main():
     get_glob_parser = main_sub.add_parser("get_glob")
     get_glob_parser.add_argument("path", metavar=".", help = "Remote file path")
     get_glob_parser.set_defaults(func=download_glob)
+
+    get_parser = main_sub.add_parser("put")
+    get_parser.add_argument("input", help = "Local file path")
+    get_parser.add_argument("output", help = "Remote file path")
+    get_parser.set_defaults(func=upload)
 
     args = parser.parse_args()
 

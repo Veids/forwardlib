@@ -1,4 +1,4 @@
-from tools.commonpb import common_pb2 as _common_pb2
+from commonpb import common_pb2 as _common_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
@@ -12,7 +12,7 @@ class EndpointList(_message.Message):
     endpoints: _containers.RepeatedScalarFieldContainer[str]
     def __init__(self, endpoints: _Optional[_Iterable[str]] = ...) -> None: ...
 
-class DownloadRequest(_message.Message):
+class FileTransferRequest(_message.Message):
     __slots__ = ("input", "output")
     INPUT_FIELD_NUMBER: _ClassVar[int]
     OUTPUT_FIELD_NUMBER: _ClassVar[int]

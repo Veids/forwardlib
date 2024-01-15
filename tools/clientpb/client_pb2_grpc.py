@@ -2,8 +2,8 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-from tools.clientpb import client_pb2 as clientpb_dot_client__pb2
-from tools.commonpb import common_pb2 as commonpb_dot_common__pb2
+from clientpb import client_pb2 as clientpb_dot_client__pb2
+from commonpb import common_pb2 as commonpb_dot_common__pb2
 
 
 class ClientRpcStub(object):
@@ -62,7 +62,12 @@ class ClientRpcStub(object):
                 )
         self.Download = channel.unary_unary(
                 '/clientpb.ClientRpc/Download',
-                request_serializer=clientpb_dot_client__pb2.DownloadRequest.SerializeToString,
+                request_serializer=clientpb_dot_client__pb2.FileTransferRequest.SerializeToString,
+                response_deserializer=commonpb_dot_common__pb2.Empty.FromString,
+                )
+        self.Upload = channel.unary_unary(
+                '/clientpb.ClientRpc/Upload',
+                request_serializer=clientpb_dot_client__pb2.FileTransferRequest.SerializeToString,
                 response_deserializer=commonpb_dot_common__pb2.Empty.FromString,
                 )
 
@@ -135,6 +140,12 @@ class ClientRpcServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def Upload(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_ClientRpcServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -185,7 +196,12 @@ def add_ClientRpcServicer_to_server(servicer, server):
             ),
             'Download': grpc.unary_unary_rpc_method_handler(
                     servicer.Download,
-                    request_deserializer=clientpb_dot_client__pb2.DownloadRequest.FromString,
+                    request_deserializer=clientpb_dot_client__pb2.FileTransferRequest.FromString,
+                    response_serializer=commonpb_dot_common__pb2.Empty.SerializeToString,
+            ),
+            'Upload': grpc.unary_unary_rpc_method_handler(
+                    servicer.Upload,
+                    request_deserializer=clientpb_dot_client__pb2.FileTransferRequest.FromString,
                     response_serializer=commonpb_dot_common__pb2.Empty.SerializeToString,
             ),
     }
@@ -363,7 +379,24 @@ class ClientRpc(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/clientpb.ClientRpc/Download',
-            clientpb_dot_client__pb2.DownloadRequest.SerializeToString,
+            clientpb_dot_client__pb2.FileTransferRequest.SerializeToString,
+            commonpb_dot_common__pb2.Empty.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Upload(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/clientpb.ClientRpc/Upload',
+            clientpb_dot_client__pb2.FileTransferRequest.SerializeToString,
             commonpb_dot_common__pb2.Empty.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

@@ -37,7 +37,8 @@ type ClientRpcClient interface {
 	// *** SFTP ***
 	ListFiles(ctx context.Context, in *Path, opts ...grpc.CallOption) (*FileList, error)
 	Glob(ctx context.Context, in *Path, opts ...grpc.CallOption) (*FileList, error)
-	Download(ctx context.Context, in *DownloadRequest, opts ...grpc.CallOption) (*commonpb.Empty, error)
+	Download(ctx context.Context, in *FileTransferRequest, opts ...grpc.CallOption) (*commonpb.Empty, error)
+	Upload(ctx context.Context, in *FileTransferRequest, opts ...grpc.CallOption) (*commonpb.Empty, error)
 }
 
 type clientRpcClient struct {
@@ -129,9 +130,18 @@ func (c *clientRpcClient) Glob(ctx context.Context, in *Path, opts ...grpc.CallO
 	return out, nil
 }
 
-func (c *clientRpcClient) Download(ctx context.Context, in *DownloadRequest, opts ...grpc.CallOption) (*commonpb.Empty, error) {
+func (c *clientRpcClient) Download(ctx context.Context, in *FileTransferRequest, opts ...grpc.CallOption) (*commonpb.Empty, error) {
 	out := new(commonpb.Empty)
 	err := c.cc.Invoke(ctx, "/clientpb.ClientRpc/Download", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clientRpcClient) Upload(ctx context.Context, in *FileTransferRequest, opts ...grpc.CallOption) (*commonpb.Empty, error) {
+	out := new(commonpb.Empty)
+	err := c.cc.Invoke(ctx, "/clientpb.ClientRpc/Upload", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +166,8 @@ type ClientRpcServer interface {
 	// *** SFTP ***
 	ListFiles(context.Context, *Path) (*FileList, error)
 	Glob(context.Context, *Path) (*FileList, error)
-	Download(context.Context, *DownloadRequest) (*commonpb.Empty, error)
+	Download(context.Context, *FileTransferRequest) (*commonpb.Empty, error)
+	Upload(context.Context, *FileTransferRequest) (*commonpb.Empty, error)
 	mustEmbedUnimplementedClientRpcServer()
 }
 
@@ -191,8 +202,11 @@ func (UnimplementedClientRpcServer) ListFiles(context.Context, *Path) (*FileList
 func (UnimplementedClientRpcServer) Glob(context.Context, *Path) (*FileList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Glob not implemented")
 }
-func (UnimplementedClientRpcServer) Download(context.Context, *DownloadRequest) (*commonpb.Empty, error) {
+func (UnimplementedClientRpcServer) Download(context.Context, *FileTransferRequest) (*commonpb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Download not implemented")
+}
+func (UnimplementedClientRpcServer) Upload(context.Context, *FileTransferRequest) (*commonpb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Upload not implemented")
 }
 func (UnimplementedClientRpcServer) mustEmbedUnimplementedClientRpcServer() {}
 
@@ -370,7 +384,7 @@ func _ClientRpc_Glob_Handler(srv interface{}, ctx context.Context, dec func(inte
 }
 
 func _ClientRpc_Download_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DownloadRequest)
+	in := new(FileTransferRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -382,7 +396,25 @@ func _ClientRpc_Download_Handler(srv interface{}, ctx context.Context, dec func(
 		FullMethod: "/clientpb.ClientRpc/Download",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ClientRpcServer).Download(ctx, req.(*DownloadRequest))
+		return srv.(ClientRpcServer).Download(ctx, req.(*FileTransferRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClientRpc_Upload_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FileTransferRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClientRpcServer).Upload(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/clientpb.ClientRpc/Upload",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClientRpcServer).Upload(ctx, req.(*FileTransferRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -433,6 +465,10 @@ var ClientRpc_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Download",
 			Handler:    _ClientRpc_Download_Handler,
+		},
+		{
+			MethodName: "Upload",
+			Handler:    _ClientRpc_Upload_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

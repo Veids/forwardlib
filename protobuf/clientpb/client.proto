@@ -23,14 +23,15 @@ service ClientRpc {
   // *** SFTP ***
   rpc ListFiles(Path) returns (FileList);
   rpc Glob(Path) returns (FileList);
-  rpc Download(DownloadRequest) returns (commonpb.Empty);
+  rpc Download(FileTransferRequest) returns (commonpb.Empty);
+  rpc Upload(FileTransferRequest) returns (commonpb.Empty);
 }
 
 message EndpointList {
   repeated string endpoints = 1;
 }
 
-message DownloadRequest {
+message FileTransferRequest {
   Path input = 1;
   Path output = 2;
 }

@@ -184,7 +184,7 @@ func (s *ClientRpcServer) Glob(ctx context.Context, path *clientpb.Path) (*clien
 	return &fileList, nil
 }
 
-func (s *ClientRpcServer) Download(ctx context.Context, req *clientpb.DownloadRequest) (*commonpb.Empty, error) {
+func (s *ClientRpcServer) Download(ctx context.Context, req *clientpb.FileTransferRequest) (*commonpb.Empty, error) {
 	source, err := s.sftp.Open(req.Input.Path)
 	if err != nil {
 		return nil, err
@@ -200,6 +200,29 @@ func (s *ClientRpcServer) Download(ctx context.Context, req *clientpb.DownloadRe
 	defer dest.Close()
 
 	nBytes, err := io.Copy(dest, source)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("Transfered: %d", nBytes)
+
+	return &commonpb.Empty{}, nil
+}
+
+func (s *ClientRpcServer) Upload(ctx context.Context, req *clientpb.FileTransferRequest) (*commonpb.Empty, error) {
+	input, err := os.Open(req.Input.Path)
+	if err != nil {
+		return nil, err
+	}
+	defer input.Close()
+
+	log.Printf("Uploading: %s", input.Name())
+	output, err := s.sftp.OpenFile(req.Output.Path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC)
+	if err != nil {
+		return nil, err
+	}
+	defer output.Close()
+
+	nBytes, err := io.Copy(output, input)
 	if err != nil {
 		return nil, err
 	}
