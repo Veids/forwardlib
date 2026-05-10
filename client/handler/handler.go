@@ -28,27 +28,34 @@ func Loop(conn io.ReadWriteCloser, controlAddr string) {
 	}
 
 	cstream, err := session.Open()
-	cstream.Write([]byte{common.CONTROL})
 	if err != nil {
 		panic(err)
 	}
+	cstream.Write([]byte{common.CONTROL})
 
 	control := rpc.NewClient(cstream)
 	reverse := handlers.NewReverseHandler(session)
 	go reverse.Serve()
 
+	var sftpClient *sftp.Client
 	sftpStream, err := session.Open()
 	if err != nil {
-		panic(err)
+		log.Printf("SFTP unavailable: failed to open stream: %v", err)
+	} else {
+		_, err = sftpStream.Write([]byte{common.SFTP})
+		if err != nil {
+			log.Printf("SFTP unavailable: failed to select stream type: %v", err)
+			sftpStream.Close()
+		} else {
+			sftpClient, err = sftp.NewClientPipe(sftpStream, sftpStream)
+			if err != nil {
+				log.Printf("SFTP unavailable: %v", err)
+				sftpStream.Close()
+			}
+		}
 	}
-	sftpStream.Write([]byte{common.SFTP})
 
-	sftp, err := sftp.NewClientPipe(sftpStream, sftpStream)
-	if err != nil {
-		panic(err)
-	}
-
-	s := handlers.NewClientRpcServer(session, control, &reverse, sftp)
+	s := handlers.NewClientRpcServer(session, control, &reverse, sftpClient)
 
 	var opts []grpc.ServerOption
 	grpcServer := grpc.NewServer(opts...)

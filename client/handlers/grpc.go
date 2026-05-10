@@ -159,7 +159,12 @@ func (s *ClientRpcServer) List(ctx context.Context, _ *commonpb.Empty) (*clientp
 func (s *ClientRpcServer) ListFiles(ctx context.Context, path *clientpb.Path) (*clientpb.FileList, error) {
 	fileList := clientpb.FileList{}
 
-	fInfo, err := s.sftp.ReadDir(path.Path)
+	sftpClient, err := s.requireSFTP()
+	if err != nil {
+		return nil, err
+	}
+
+	fInfo, err := sftpClient.ReadDir(path.Path)
 
 	if err != nil {
 		return nil, err
@@ -173,7 +178,12 @@ func (s *ClientRpcServer) ListFiles(ctx context.Context, path *clientpb.Path) (*
 }
 
 func (s *ClientRpcServer) Glob(ctx context.Context, path *clientpb.Path) (*clientpb.FileList, error) {
-	fInfo, err := s.sftp.Glob(path.Path)
+	sftpClient, err := s.requireSFTP()
+	if err != nil {
+		return nil, err
+	}
+
+	fInfo, err := sftpClient.Glob(path.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +195,12 @@ func (s *ClientRpcServer) Glob(ctx context.Context, path *clientpb.Path) (*clien
 }
 
 func (s *ClientRpcServer) Download(ctx context.Context, req *clientpb.FileTransferRequest) (*commonpb.Empty, error) {
-	source, err := s.sftp.Open(req.Input.Path)
+	sftpClient, err := s.requireSFTP()
+	if err != nil {
+		return nil, err
+	}
+
+	source, err := sftpClient.Open(req.Input.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -209,6 +224,11 @@ func (s *ClientRpcServer) Download(ctx context.Context, req *clientpb.FileTransf
 }
 
 func (s *ClientRpcServer) Upload(ctx context.Context, req *clientpb.FileTransferRequest) (*commonpb.Empty, error) {
+	sftpClient, err := s.requireSFTP()
+	if err != nil {
+		return nil, err
+	}
+
 	input, err := os.Open(req.Input.Path)
 	if err != nil {
 		return nil, err
@@ -216,7 +236,7 @@ func (s *ClientRpcServer) Upload(ctx context.Context, req *clientpb.FileTransfer
 	defer input.Close()
 
 	log.Printf("Uploading: %s", input.Name())
-	output, err := s.sftp.OpenFile(req.Output.Path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC)
+	output, err := sftpClient.OpenFile(req.Output.Path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC)
 	if err != nil {
 		return nil, err
 	}
@@ -229,6 +249,13 @@ func (s *ClientRpcServer) Upload(ctx context.Context, req *clientpb.FileTransfer
 	log.Printf("Transfered: %d", nBytes)
 
 	return &commonpb.Empty{}, nil
+}
+
+func (s *ClientRpcServer) requireSFTP() (*sftp.Client, error) {
+	if s.sftp == nil {
+		return nil, fmt.Errorf("sftp unavailable")
+	}
+	return s.sftp, nil
 }
 
 func (s *ClientRpcServer) ForwardStart(ctx context.Context, addrPack *commonpb.AddrPack) (*commonpb.Empty, error) {
